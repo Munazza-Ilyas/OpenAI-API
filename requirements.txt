@@ -1,0 +1,7 @@
+pandas
+tiktoken
+python-dotenv
+openai
+tqdm
+joblib
+scikit-learn
