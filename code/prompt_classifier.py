@@ -1,11 +1,13 @@
 import openai
 from joblib import Memory
 
+import os
+import dotenv
+
 CACHE_DIR = ".cachedir"
 
-PROMPT = """
-Write this.
-"""
+#PROMPT = "Please classify the following text as 'ham' or 'spam'. Just say 'ham' or 'spam' and nothing else:"
+
 
 memory = Memory(CACHE_DIR, verbose=0)
 
@@ -16,9 +18,23 @@ def classify_text_message(text, api_key):
     Takes a text message and an OpenAI API Key and classifies it as "ham" or "spam".
     If GPT fails to return a valid response ("ham" or "spam") returns "ham".
     """
+    try:
+        openai.api_key = api_key
+        PROMPT = f"Please classify the following text as 'ham' or 'spam'.{text}, Just say 'ham' or 'spam' and nothing else:"
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=PROMPT,
+            max_tokens=5,
+        )
+        predicted_label = response.choices[0].text.strip().lower()
 
-    # write this
-
+        if predicted_label in ('ham', 'spam'):
+            return predicted_label
+        else:
+            return 'ham'  
+    except Exception as e:
+        print("An error occurred:", e)
+        return 'ham'  
 
 if __name__ == "__main__":
     import os

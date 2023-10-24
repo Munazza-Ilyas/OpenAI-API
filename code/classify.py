@@ -2,7 +2,7 @@ import pandas as pd
 from prompt_classifier import classify_text_message
 from sklearn.metrics import classification_report
 from tqdm import tqdm
-
+import openai
 # this is so we can use progress_apply
 tqdm.pandas(desc="progress")
 
@@ -11,15 +11,21 @@ def load_data(path):
     """Loads a CSV, expecting columns "label" and "text".
     Returns a pd.DataFrame with series named "label" and "text".
     """
-    # write this
+    df = pd.read_csv(path)
+    if "label" in df.columns and "text" in df.columns:
+        return df[["label", "text"]]
+    else:
+        raise ValueError("CSV must have 'label' and 'text' columns.")    
 
 def classify_all(df, api_key):
     """Takes a DataFrame with series named "label" and "text".
     Returns a pd.DataFrame with series named "label" and "text"
     and also "predicted_label" which is our zero-shot classifier's prediction.
     """
+    openai.api_key = api_key
+    df["predicted_label"] = df["text"].progress_apply(lambda x: classify_text_message(x, api_key))
+    return df
 
-    # write this
     # in order to be able to use a progress bar with epd.DataFram
     # tqdm can modify pd.DataFrame's methods to include `progress_apply`
     # which works like apply, but adds a progress bar
