@@ -1,5 +1,6 @@
 import openai
 from joblib import Memory
+import backoff
 
 import os
 import dotenv
@@ -11,6 +12,24 @@ CACHE_DIR = ".cachedir"
 
 memory = Memory(CACHE_DIR, verbose=0)
 
+openai.api_requestor.TIMEOUT_SECS = 4
+
+def _backoff_hdlr(details):
+    print(
+        f"Backing off {details['wait']:0.1f} seconds after {details['tries']} tries\n {details['exception']}"
+    )
+
+
+@backoff.on_exception(
+    backoff.expo,
+    (
+        openai.error.RateLimitError,
+        openai.error.APIConnectionError,
+        openai.error.Timeout,
+        openai.error.APIError,
+    ),
+    on_backoff=_backoff_hdlr,
+)
 
 @memory.cache
 def classify_text_message(text, api_key):
@@ -25,6 +44,7 @@ def classify_text_message(text, api_key):
             engine="text-davinci-003",
             prompt=PROMPT,
             max_tokens=5,
+            timeout=10
         )
         predicted_label = response.choices[0].text.strip().lower()
 
